@@ -1,0 +1,125 @@
+<title>Small Python Jobs</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style>
+/* Layout: single narrow column, one sample per band, input beside output */
+:root{--bg:#f6f7f5;--fg:#1d2420;--mut:#5c6862;--line:#d9dfd9;--card:#ffffff;--code:#eef1ee;--accent:#0b6b57;
+--display:"Fraunces",Georgia,serif;--body:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121714;--fg:#e6ece8;--mut:#9aa8a1;--line:#2a332e;--card:#181f1b;--code:#1f2823;--accent:#4fd1b0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121714;--fg:#e6ece8;--mut:#9aa8a1;--line:#2a332e;--card:#181f1b;--code:#1f2823;--accent:#4fd1b0;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;
+padding-block:40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+header h1{font-family:var(--display);font-size:clamp(30px,6vw,44px);line-height:1.1;margin:0 0 12px;text-wrap:balance}
+header p{margin:0;max-width:62ch;color:var(--mut)}
+.sample{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.sample h2{margin:0;font-size:20px} .sample p{margin:0;color:var(--mut)}
+.io{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.io>div{min-width:0} h4{margin:0 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:600}
+pre{margin:0;background:var(--code);padding:12px;border-radius:4px;overflow-x:auto;font:13px/1.5 var(--mono)}
+code{font-family:var(--mono);font-size:13px;background:var(--code);padding:2px 6px;border-radius:3px}
+summary{cursor:pointer;color:var(--accent);font-weight:600} details pre{margin-top:10px;max-height:340px}
+summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.run{font-size:14px} footer{color:var(--mut);font-size:14px}
+</style>
+<main>
+<header><h1>Small Python jobs, delivered as plain scripts</h1>
+<p>Three working examples of the kind of task I take: cleaning a CSV, summarising sales data, pulling headings from a web page. Each one below shows a real input, the real output it produced, and the full source.</p></header>
+<section class="sample" id="csv-cleaner">
+<h2>Messy CSV cleaner</h2><p>Removes duplicate rows, trims spaces, fixes name casing, lowercases emails and strips phone formatting.</p>
+<div class="io"><div><h4>Input</h4><pre>Nome, Email ,Telefone
+  ana souza ,ANA@Exemplo.com,(41) 99999-1111
+JOAO LIMA,joao@exemplo.com,41 98888-2222
+Ana Souza,ana@exemplo.com,+55 41 99999-1111
+maria  dias,,41977773333
+carlos nunes,Carlos@exemplo.com , 41-96666-4444</pre></div><div><h4>Output</h4><pre>nome,email,telefone
+Ana Souza,ana@exemplo.com,41999991111
+Joao Lima,joao@exemplo.com,41988882222
+Carlos Nunes,carlos@exemplo.com,41966664444</pre></div></div>
+<details><summary>Python source</summary><pre>&quot;&quot;&quot;Limpa um CSV: remove duplicados, apara espacos, padroniza e-mails e telefones.&quot;&quot;&quot;
+import csv, re, sys
+
+def limpar(entrada, saida):
+    vistos, linhas = set(), []
+    with open(entrada, newline=&quot;&quot;, encoding=&quot;utf-8&quot;) as f:
+        for r in csv.DictReader(f):
+            r = {k.strip().lower(): (v or &quot;&quot;).strip() for k, v in r.items()}
+            r[&quot;nome&quot;] = r[&quot;nome&quot;].title()
+            r[&quot;email&quot;] = r[&quot;email&quot;].lower()
+            r[&quot;telefone&quot;] = re.sub(r&quot;\D&quot;, &quot;&quot;, r[&quot;telefone&quot;])
+            if r[&quot;email&quot;] in vistos or not r[&quot;email&quot;]:
+                continue
+            vistos.add(r[&quot;email&quot;])
+            linhas.append(r)
+    with open(saida, &quot;w&quot;, newline=&quot;&quot;, encoding=&quot;utf-8&quot;) as f:
+        w = csv.DictWriter(f, fieldnames=[&quot;nome&quot;, &quot;email&quot;, &quot;telefone&quot;])
+        w.writeheader(); w.writerows(linhas)
+    return len(linhas)
+
+if __name__ == &quot;__main__&quot;:
+    print(limpar(sys.argv[1], sys.argv[2]), &quot;linhas salvas&quot;)</pre></details>
+<p class="run">Run: <code>python limpar_csv.py contatos_sujos.csv limpo.csv</code></p></section><section class="sample" id="sales-summary">
+<h2>Sales summary report</h2><p>Reads a sales CSV and prints totals, units and average ticket per product, plus monthly revenue.</p>
+<div class="io"><div><h4>Input</h4><pre>data,produto,qtd,valor
+2026-08-03,Camiseta,2,&quot;79,80&quot;
+2026-08-15,Caneca,5,&quot;125,00&quot;
+2026-09-02,Camiseta,1,&quot;39,90&quot;
+2026-09-20,Boné,3,&quot;96,00&quot;
+2026-09-28,Caneca,2,&quot;50,00&quot;</pre></div><div><h4>Output</h4><pre>POR PRODUTO
+  Caneca     qtd=7   total=R$   175.00 ticket=R$   25.00
+  Camiseta   qtd=3   total=R$   119.70 ticket=R$   39.90
+  Boné       qtd=3   total=R$    96.00 ticket=R$   32.00
+POR MES
+  2026-08  R$   204.80
+  2026-09  R$   185.90</pre></div></div>
+<details><summary>Python source</summary><pre>&quot;&quot;&quot;Le um CSV de vendas e gera resumo por produto e por mes (total, quantidade, ticket medio).&quot;&quot;&quot;
+import csv, sys
+from collections import defaultdict
+
+def resumir(arquivo):
+    prod, mes = defaultdict(lambda: [0, 0.0]), defaultdict(float)
+    with open(arquivo, newline=&quot;&quot;, encoding=&quot;utf-8&quot;) as f:
+        for r in csv.DictReader(f):
+            v = float(r[&quot;valor&quot;].replace(&quot;,&quot;, &quot;.&quot;))
+            prod[r[&quot;produto&quot;]][0] += int(r[&quot;qtd&quot;]); prod[r[&quot;produto&quot;]][1] += v
+            mes[r[&quot;data&quot;][:7]] += v
+    print(&quot;POR PRODUTO&quot;); 
+    for p, (q, t) in sorted(prod.items(), key=lambda x: -x[1][1]):
+        print(f&quot;  {p:&lt;10} qtd={q:&lt;3} total=R$ {t:&gt;8.2f} ticket=R$ {t/q:&gt;7.2f}&quot;)
+    print(&quot;POR MES&quot;)
+    for m, t in sorted(mes.items()): print(f&quot;  {m}  R$ {t:&gt;8.2f}&quot;)
+
+if __name__ == &quot;__main__&quot;: resumir(sys.argv[1])</pre></details>
+<p class="run">Run: <code>python resumo_vendas.py vendas.csv</code></p></section><section class="sample" id="html-extractor">
+<h2>Page heading extractor</h2><p>Reads a web page (local file or URL) and saves every h1, h2 and h3 to a CSV.</p>
+<div class="io"><div><h4>Input</h4><pre>&lt;html&gt;&lt;body&gt;&lt;h1&gt;Loja Exemplo&lt;/h1&gt;&lt;h2&gt;Camisetas&lt;/h2&gt;&lt;h3&gt;Camiseta Basica&lt;/h3&gt;&lt;h2&gt;Canecas&lt;/h2&gt;&lt;h3&gt;Caneca 300ml&lt;/h3&gt;&lt;/body&gt;&lt;/html&gt;</pre></div><div><h4>Output</h4><pre>nivel,texto
+h1,Loja Exemplo
+h2,Camisetas
+h3,Camiseta Basica
+h2,Canecas
+h3,Caneca 300ml</pre></div></div>
+<details><summary>Python source</summary><pre>&quot;&quot;&quot;Baixa uma pagina HTML e salva titulos (h1-h3) e links em CSV.&quot;&quot;&quot;
+import csv, sys, urllib.request
+from html.parser import HTMLParser
+
+class P(HTMLParser):
+    def __init__(s): super().__init__(); s.rows=[]; s.tag=None; s.href=None; s.buf=&quot;&quot;
+    def handle_starttag(s, t, a):
+        if t in (&quot;h1&quot;,&quot;h2&quot;,&quot;h3&quot;): s.tag=t; s.buf=&quot;&quot;
+        if t==&quot;a&quot;: s.href=dict(a).get(&quot;href&quot;)
+    def handle_data(s, d):
+        if s.tag: s.buf+=d
+    def handle_endtag(s, t):
+        if t==s.tag and s.buf.strip(): s.rows.append((t, s.buf.strip(), &quot;&quot;)); s.tag=None
+
+def extrair(origem, saida):
+    html = open(origem, encoding=&quot;utf-8&quot;).read() if not origem.startswith(&quot;http&quot;) else urllib.request.urlopen(origem, timeout=20).read().decode(&quot;utf-8&quot;,&quot;ignore&quot;)
+    p = P(); p.feed(html)
+    with open(saida,&quot;w&quot;,newline=&quot;&quot;,encoding=&quot;utf-8&quot;) as f:
+        w=csv.writer(f); w.writerow([&quot;nivel&quot;,&quot;texto&quot;]); w.writerows([(a,b) for a,b,_ in p.rows])
+    return len(p.rows)
+
+if __name__ == &quot;__main__&quot;: print(extrair(sys.argv[1], sys.argv[2]), &quot;titulos salvos&quot;)</pre></details>
+<p class="run">Run: <code>python extrair_titulos.py pagina.html titulos.csv</code></p></section>
+<footer>Payment via PayPal after you confirm the result on your own file. I send a short preview of the output first, then the script once paid.</footer>
+</main>
